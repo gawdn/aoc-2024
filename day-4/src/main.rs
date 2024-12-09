@@ -1,10 +1,90 @@
 use std::{fs::File, io::Read};
 
-type SearchLine = Vec<char>;
+/**
+ * It's an X-MAS puzzle in which you're supposed to find two MAS in the shape of an X.
+ * Summary:
+ *
+ * Find all distinct occurrences of MAS overlapping in an X shape. MAS may be written backwards or forwards.
+ *
+ * Case 1:
+ * M.S
+ * .A.
+ * M.S
+ * Case 2:
+ * S.S
+ * .A.
+ * M.M
+ * Case 3:
+ * M.M
+ * .A.
+ * S.S
+ * Case 4:
+ * S.M
+ * .A.
+ * S.M
+ *
+ * This is a convolution problem.
+ * For each character, assume it is the top left of the one of the four variants:
+ * - Case 1: MS
+ * - Case 2: SS
+ * - Case 3: MM
+ * - Case 4: SM
+ *
+ * Check the kernel to see if it matches any of the cases.
+ *
+ * Optimizations could include:
+ * - Skip if the character is X since it obviously can't be that
+ * - Only do searches for the M/S variant based on what the letter is
+ *
+ * Maybe can do some fancy bitmasking but probably overoptimising.
+ */
+
 fn solve_part_2(input: String) -> i64 {
-    0
+    let search_grid = parse_word_search(input);
+    let mut total = 0;
+    // We don't check the last two rows because the kernel can't fit in the remaining space.
+    for row in 0..(search_grid.len() - 2) {
+        // Don't check last two columns either. Assuming search rows are of uniform size.
+        for col in 0..(search_grid.first().unwrap().len() - 2) {
+            total += if is_valid_cross_pattern(&search_grid, row, col) {
+                println!("Found cross at {row},{col}");
+
+                1
+            } else {
+                0
+            }
+        }
+    }
+    total
 }
 
+fn is_valid_cross_pattern(
+    input: &Vec<Vec<char>>,
+    starting_row: usize,
+    starting_col: usize,
+) -> bool {
+    // Hardcoded diagonals to check
+    let top_left_to_bottom_right: String = vec![
+        input[starting_row][starting_col],
+        input[starting_row + 1][starting_col + 1],
+        input[starting_row + 2][starting_col + 2],
+    ]
+    .into_iter()
+    .collect();
+    let top_right_to_bottom_left: String = vec![
+        input[starting_row][starting_col + 2],
+        input[starting_row + 1][starting_col + 1],
+        input[starting_row + 2][starting_col],
+    ]
+    .into_iter()
+    .collect();
+
+    // They must both be valid
+    (top_left_to_bottom_right == "SAM" || top_left_to_bottom_right == "MAS")
+        && (top_right_to_bottom_left == "SAM" || top_right_to_bottom_left == "MAS")
+}
+
+type SearchLine = Vec<char>;
 /**
  * This word search allows words to be
  * horizontal,
